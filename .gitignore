@@ -38,6 +38,7 @@ pip-delete-this-directory.txt
 
 #GitGuide
 gitguide.txt
+timeline.txt
 
 # Unit test / coverage reports
 htmlcov/
