@@ -10,4 +10,5 @@ def get_auth_manager():
         client_secret=os.getenv("SPOTIFY_CLIENT_SECRET"),
         redirect_uri=os.getenv("SPOTIFY_REDIRECT_URI"),
         scope="user-read-private user-top-read",
+        cache_path=".spotify_cache"
     )

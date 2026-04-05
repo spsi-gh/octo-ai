@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware #cross origin resource sharin
 from spotify import get_auth_manager
 import spotipy
 from fastapi.responses import RedirectResponse
+import os
 
 app = FastAPI()
 
@@ -45,3 +46,36 @@ def check_user(token:str):
     except Exception as e:
         return {"status":"error", "message": "Invalid token"}
     
+
+#add cache to save token
+@app.get("/check-cache")
+def check_cache():
+    token_info = auth_manager.get_cached_token()
+
+    if token_info:
+        #check if it is not expired
+        if not auth_manager.is_token_expired(token_info=token_info):
+            return{
+                "status":"success",
+                "token":token_info['access_token']
+            }
+    return {
+        "status":"error",
+        "message":"No cache found"
+    }
+
+#logout to clear cache
+@app.get("/logout")
+def logout():
+    cache_path = ".spotify_cache"
+    if os.path.exists(cache_path):
+        os.remove(cache_path)
+        return {
+            "status":"success",
+            "message":"Logged out Successfully."
+        }
+        
+    return{
+        "status":"error",
+        "message":"No cache found."
+    }

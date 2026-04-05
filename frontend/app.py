@@ -5,11 +5,19 @@ BACKEND_URL = "http://127.0.0.1:8000"
 
 st.title("OCTO-AI")
 
-#check for token in url
-query_params = st.query_params 
+#check for token in cache
+if "token" not in st.session_state:
+    try:
+        cache_res = requests.get(f"{BACKEND_URL}/check-cache").json()
+        if cache_res["status"] == "success":
+            st.session_state.token = cache_res["token"]
+    except:
+        pass
 
-if "token" in query_params:
-    st.session_state.token = query_params["token"]
+
+#check for token in url
+if "token" in st.query_params:
+    st.session_state.token = st.query_params["token"]
     st.query_params.clear()
 
 if "token" in st.session_state: 
@@ -20,8 +28,15 @@ if "token" in st.session_state:
         if result["status"] == "success":
             st.success(f"Verified as {result['user']}")
             st.image(result["image"])
+
+            #log out
             if st.button("LogOut"):
-                del st.session_state.token
+                try:
+                    requests.get(f"{BACKEND_URL}/logout")  #remove cache
+                except:
+                    pass
+            
+                del st.session_state.token #remove from session state
                 st.rerun()
         else:
             st.error("You session has expired. Pls login again.")
