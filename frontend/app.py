@@ -5,29 +5,44 @@ BACKEND_URL = "http://127.0.0.1:8000"
 
 st.title("OCTO-AI")
 
-if st.button("Request Login Link from Backend"):
+#check for token in url
+query_params = st.query_params 
+
+if "token" in query_params:
+    st.session_state.token = query_params["token"]
+    st.query_params.clear()
+
+if "token" in st.session_state: 
     try:
-        response = requests.get(f"{BACKEND_URL}/get-auth-link")
-        response.raise_for_status()
-        data = response.json()
+        response = requests.get(f"{BACKEND_URL}/check-user", params={"token": st.session_state.token})
+        result = response.json()
 
-        auth_link = data["auth_url"]
-        st.markdown(f"[Click here to authenticate]({auth_link})")
-
+        if result["status"] == "success":
+            st.success(f"Verified as {result['user']}")
+            st.image(result["image"])
+            if st.button("LogOut"):
+                del st.session_state.token
+                st.rerun()
+        else:
+            st.error("You session has expired. Pls login again.")
+            del st.session_state.token
+            st.rerun()
     except Exception as e:
-        st.error(f"Failed to get auth link: {e}")
+        st.error(f"Could not connect to backend {e}")
 
-st.divider()
+    
+else:
+    st.subheader("Connect you Spotify Account")
+    
+    if st.button("Connect"):
+        try:
+            response = requests.get(f"{BACKEND_URL}/get-auth-link")
+            response.raise_for_status()
+            data = response.json()
 
-st.subheader("Verify Token")
-user_token = st.text_input("Enter token")
+            auth_link = data["auth_url"]
+            st.markdown(f"[Click here to authenticate]({auth_link})")
 
-if st.button("Verify Token"):
-    response = requests.get(f"{BACKEND_URL}/check-user", params={"token": user_token})
-    response.raise_for_status()
+        except Exception as e:
+            st.error(f"Failed to get auth link: {e}")
 
-    result = response.json()
-    if result["status"] == "success":
-        st.success(f"Backend verified user: {result['user']}")
-    else:
-        st.error(result["message"])
