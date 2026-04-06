@@ -1,0 +1,6 @@
+[theme]
+primaryColor = "#EC5800"          # Spotify Green (Optional)
+backgroundColor = "#FFFFFF"       # White Background
+secondaryBackgroundColor = "#F0F2F6" # Light Gray for sidebars/widgets
+textColor = "#262730"             # Dark text for readability
+font = "sans serif"               # Options: "sans serif", "serif", or "monospace"

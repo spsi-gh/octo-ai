@@ -4,7 +4,11 @@ from spotify import get_auth_manager
 import spotipy
 from fastapi.responses import RedirectResponse
 import os
-from models import TrackModel, TopTrackResponse
+from models import TrackModel, TopTrackResponse, MoodMapping, MoodMappingResponse
+from google import genai
+from mood_engine import search_mood
+
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 app = FastAPI()
 
@@ -45,6 +49,7 @@ def check_user(token:str):
             "image": user_info["images"][0]["url"] if user_info["images"] else None
         }
     except Exception as e:
+        print(f"Error in check_user{e}")
         return {"status":"error", "message": "Invalid token"}
     
 
@@ -83,38 +88,56 @@ def logout():
     }
 
 
-# creating end point for top-tracks
-@app.get("/top-tracks", response_model=TopTrackResponse)
-def get_top_tracks(token:str, limit: int = 10, time_range:str = "long_term"):
-    try:
-        sp = spotipy.Spotify(auth=token)
-        results = sp.current_user_top_tracks(limit=limit, time_range=time_range)
-        items = results.get('items', [])
+# # creating end point for top-tracks
+# @app.get("/top-tracks", response_model=TopTrackResponse)
+# def get_top_tracks(token:str, limit: int = 10, time_range:str = "long_term"):
+#     try:
+#         sp = spotipy.Spotify(auth=token)
+#         results = sp.current_user_top_tracks(limit=limit, time_range=time_range)
+#         items = results.get('items', [])
 
-        track_list=[]
-        for item in items:
-            # Inside your loop in main.py
-            track_data = TrackModel(
-                id=item['id'],
-                name=item['name'],
-                artist=item['artists'][0]['name'],
-                album_name=item['album']['name'],
-                image_url=item['album']['images'][0]['url'] if item['album']['images'] else None,
-                preview_url=item.get('preview_url'),  #preview is unsupported now
-                uri=item['uri']
-            )   
-            track_list.append(track_data)
-        return {
-            "status":"success",
-            "tracks":track_list
-        }
-    except Exception as e:
-        print("DETAILED ERROR")
-        print(f"Error Type: {type(e).__name__}")
-        print(f"Error Message: {e}")
+#         track_list=[]
+#         for item in items:
+#             # Inside your loop in main.py
+#             track_data = TrackModel(
+#                 id=item['id'],
+#                 name=item['name'],
+#                 artist=item['artists'][0]['name'],
+#                 album_name=item['album']['name'],
+#                 image_url=item['album']['images'][0]['url'] if item['album']['images'] else None,
+#                 preview_url=item.get('preview_url'),  #preview is unsupported now
+#                 uri=item['uri']
+#             )   
+#             track_list.append(track_data)
+#         return {
+#             "status":"success",
+#             "tracks":track_list
+#         }
+#     except Exception as e:
+#         print("DETAILED ERROR")
+#         print(f"Error Type: {type(e).__name__}")
+#         print(f"Error Message: {e}")
         
-        return {
-            "status": "error",
-            "message": str(e) if str(e) else "Check Backend Terminal for details",
-            "tracks": []
-        }   
+#         return {
+#             "status": "error",
+#             "message": str(e) if str(e) else "Check Backend Terminal for details",
+#             "tracks": []
+#         }   
+
+
+@app.get("/map-mood", response_model=MoodMappingResponse)
+def map_mood(mood_text: str):
+    ai_result = search_mood(mood_text=mood_text)
+    
+    if ai_result: 
+        return {"status":"success", **ai_result.model_dump()}
+    else:
+        return{
+            "status":"error",
+            "valence":0.5,
+            "energy":0.5,
+            "seed_genre":"indie",
+            "reason":"AI unavailable."
+        }
+    
+   
