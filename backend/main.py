@@ -7,6 +7,8 @@ import os
 from models import TrackModel, TopTrackResponse, MoodMapping, MoodMappingResponse
 from google import genai
 from mood_engine import search_mood
+from recommendations import get_mood_recommendations
+from fastapi import Body
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
@@ -140,4 +142,43 @@ def map_mood(mood_text: str):
             "reason":"AI unavailable."
         }
     
-   
+
+@app.get("/get-vibe-tracks", response_model=TopTrackResponse)
+def get_vibe_tracks(token: str, seed_genre: str, offset:int = 0):
+    tracks = get_mood_recommendations(token, seed_genre, offset=offset)
+    if tracks:
+        return {
+            "status":"success",
+            "tracks":tracks
+        }
+    return {
+        "status":"error",
+        "tracks":[]
+    }
+
+
+@app.post("/save-playlist")
+def save_playlist(token: str, mood_name: str, track_uris: list = Body(...)):
+    try:
+        sp = spotipy.Spotify(auth=token)
+        # user_id = sp.me()['id']
+
+        playlist_name = f"Octo AI: {mood_name.title()} Vibe"
+        playlist = sp.current_user_playlist_create(
+            # user=user_id,
+            name=playlist_name,
+            public=True,    
+            description="Created by Octo AI"
+        )
+        
+        print(playlist['id'])
+        sp.playlist_add_items(playlist_id=playlist['id'], items=track_uris)
+
+        return{
+            "status":"success", 
+            "playlist_url":playlist['external_urls']['spotify']
+        }
+
+    except Exception as e:
+        print(f"Error saving playlist: {e}")
+        return {"status": "error", "message":str(e)}
