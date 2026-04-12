@@ -32,12 +32,11 @@ def display_tracks(tracks):
     cols = st.columns(3)
     for idx, track in enumerate(tracks):
         with cols[idx % 3]:
-            # Add a slight border/container effect using markdown
+            
             st.image(track['image_url'], use_container_width=True)
             st.markdown(f"**{track['name']}**")
             st.caption(f"{track['artist']}")
             
-            # Corrected Spotify Link
             st.link_button("Play", f"https://open.spotify.com/track/{track['id']}", use_container_width=True)
 
 try:
@@ -47,11 +46,9 @@ try:
     if result.get("status") == "success":
         st.sidebar.success(f"Logged in as: {result['user']}")
         
-        # UI Header
         st.header("Mood Discovery")
         user_mood_ip = st.chat_input("How are you feelin browski UwU")
 
-        # HANDLE NEW INPUT
         if user_mood_ip:
             with st.spinner("Octo is analyzing your vibe..."):
                 params = {"mood_text": user_mood_ip}
@@ -59,17 +56,15 @@ try:
                 mood_data = mood_res.json()
                 
                 if mood_data.get("status") == "success":
-                    # Store everything in session state
+                    # store everything in session state
                     st.session_state.mood_dna = mood_data
                     st.session_state.current_tracks = get_tracks(mood_data, offset=0)
                 else:
                     st.error("AI mapping failed.")
 
-        # 2. PERSISTENT DISPLAY (Logic runs every time mood_dna exists)
         if "mood_dna" in st.session_state and "current_tracks" in st.session_state:
             dna = st.session_state.mood_dna
             
-            # DNA Stats
             st.subheader("Found your DNA")
             m1, m2, m3 = st.columns(3)
             m1.metric("Valence", dna["valence"])
@@ -80,7 +75,6 @@ try:
             st.divider()
             st.subheader("Your Personalized Playlist")
 
-            # Regenerate Button
             if st.button("Regenerate Vibe 🐙", use_container_width=True):
                 with st.spinner("Shuffling tracks..."):
                     random_offset = random.randint(1,80)
@@ -89,7 +83,6 @@ try:
 
             display_tracks(st.session_state.current_tracks)
             
-            # Placeholder for future "Save Playlist" button
             st.divider()
             if st.button("Save this Playlist to Spotify 💚", use_container_width=True):
                 track_uris = [track['uri'] for track in st.session_state.current_tracks]
@@ -115,12 +108,11 @@ try:
                     else:
                         st.error(f"Failed to save: {save_data.get('message')}")
                         
-        # SIDEBAR LOGOUT
         with st.sidebar:
             st.divider()
             st.write("### Controls")
             
-            # 1. CLEAR BUTTON: Just resets the app view
+            # just reset the app view
             if st.button("New Vibe", use_container_width=True, help="Clear the current mood and start fresh"):
                 if "mood_dna" in st.session_state:
                     del st.session_state.mood_dna
@@ -128,16 +120,14 @@ try:
                     del st.session_state.current_tracks
                 st.rerun()
 
-            # 2. LOGOUT BUTTON: Full session termination
+            # session termination
             if st.button("Log Out", key="logout_btn", use_container_width=True, type="secondary"):
                 with st.spinner("Logging out..."):
                     try:
-                        # Tell backend to clear Spotify cache/tokens
                         requests.get(f"{BACKEND_URL}/logout") 
                     except:
                         pass
                     
-                    # Wipe EVERYTHING from local session
                     keys_to_clear = ["token", "mood_dna", "current_tracks"]
                     for key in keys_to_clear:
                         if key in st.session_state:
