@@ -13,17 +13,15 @@ with col2:
     st.markdown("<br>", unsafe_allow_html=True)
 
     try:
-        # Fetch the link from backend   
         response = requests.get(f"{BACKEND_URL}/get-auth-link")
         auth_link = response.json()["auth_url"]
 
-        # 3. The Streamlit Tool: st.link_button
         # use_container_width=True makes it fill the center column perfectly
         st.link_button(
             label="Connect your Spotify", 
             url=auth_link, 
             use_container_width=True,
-            type="primary" # Makes it the solid green/primary color
+            type="primary" 
         )
 
     except Exception as e:  
